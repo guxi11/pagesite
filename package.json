@@ -1,6 +1,6 @@
 {
   "name": "pagesite",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "description": "Self-hosted HTML sharing with optional access codes — server, CLI, and AI skill in one zero-dep package",
   "type": "module",
   "bin": {

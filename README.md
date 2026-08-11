@@ -67,64 +67,11 @@ Then: `npx pagesite upload report.html --seal`
 
 ### 4. AI Skill (Claude Code / Codebuddy)
 
-pagesite 提供 `SKILL.md`，让 AI agent 能直接通过 CLI 发布 HTML 页面。
+对 AI 说：
 
-#### 从零开始配置
+> 帮我安装 pagesite skill：先问我装全局还是当前项目，然后 npm install pagesite，把安装路径下的 SKILL.md 注册到对应的 settings.json 的 skills 数组里，最后读取 SKILL.md 中的「首次配置」章节引导我完成 ~/.pagesiterc.json 的配置。
 
-1. **安装 skill 到本地 skills 目录**
-
-```bash
-mkdir -p ~/.claude/skills
-npm pack pagesite --pack-destination ~/.claude/skills
-cd ~/.claude/skills && tar -xzf pagesite-*.tgz --strip-components=1 -C . && rm pagesite-*.tgz
-```
-
-或直接 clone（开发用）：
-```bash
-git clone <repo-url> ~/.claude/skills/pagesite
-```
-
-2. **注册 skill**
-
-在 Claude Code 的 settings.json（`~/.claude/settings.json` 或项目级 `.claude/settings.json`）中添加：
-
-```json
-{
-  "skills": [
-    "~/.claude/skills/SKILL.md"
-  ]
-}
-```
-
-3. **创建认证配置**
-
-AI 首次触发 skill 时会自动引导你完成配置。也可以手动创建：
-
-```bash
-cat > ~/.pagesiterc.json << 'EOF'
-{
-  "domain": "https://your-pagesite-server.com",
-  "id": "your-username",
-  "token": "your-password"
-}
-EOF
-chmod 600 ~/.pagesiterc.json
-```
-
-- `domain`：你的 pagesite 服务器地址
-- `id`：注册时选择的用户名
-- `token`：注册时设置的密码
-
-如果还没有账号，先在服务端 Web UI 注册，或通过 API：
-```bash
-curl -X POST https://your-server.com/api/register \
-  -H 'Content-Type: application/json' \
-  -d '{"id":"yourname","token":"yourpass"}'
-```
-
-4. **使用**
-
-配置完成后，对 AI 说「发布这个页面」「share this html」即可触发 skill，AI 会调用 `npx pagesite upload` 完成发布并返回链接。
+完成后对 AI 说「发布这个页面」「share this html」即可触发 skill。
 
 ### 5. Web UI
 
