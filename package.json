@@ -1,0 +1,27 @@
+{
+  "name": "pagesite",
+  "version": "1.2.5",
+  "description": "Self-hosted HTML sharing with optional access codes — server, CLI, and AI skill in one zero-dep package",
+  "type": "module",
+  "bin": {
+    "pagesite": "./bin/pagesite.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "SKILL.md",
+    "README.md"
+  ],
+  "keywords": [
+    "html",
+    "share",
+    "static-hosting",
+    "access-code",
+    "self-hosted",
+    "dufs-alternative"
+  ],
+  "engines": {
+    "node": ">=18.3"
+  },
+  "license": "MIT"
+}
