@@ -1,16 +1,16 @@
 ---
-name: singlepage
-description: 发布 HTML 页面到自部署的 singlepage 服务器，返回可分享链接。当用户要"分享页面 / 发布 html / 生成链接 / share page / publish html / 上传页面"时使用。
+name: pagest
+description: 发布 HTML 页面到自部署的 pagest 服务器，返回可分享链接。当用户要"分享页面 / 发布 html / 生成链接 / share page / publish html / 上传页面"时使用。
 ---
 
-# singlepage skill
+# pagest skill
 
-通过 CLI 将 HTML 发布到远端 singlepage 服务器。
+通过 CLI 将 HTML 发布到远端 pagest 服务器。
 
 ## 前置条件
 
-1. 已安装 `singlepage`（全局或项目内均可，也可用 `npx singlepage`）
-2. 存在配置文件 `~/.singlepagerc.json`：
+1. 已安装 `pagest`（全局或项目内均可，也可用 `npx pagest`）
+2. 存在配置文件 `~/.pagestrc.json`：
 
 ```json
 {"domain": "https://pages.example.com", "apiKey": "sp_a1b2c3d4..."}
@@ -26,25 +26,25 @@ description: 发布 HTML 页面到自部署的 singlepage 服务器，返回可�
 
 ```bash
 # 写入临时文件
-tmp=$(mktemp /tmp/singlepage_XXXXXX.html)
+tmp=$(mktemp /tmp/pagest_XXXXXX.html)
 cat > "$tmp" << 'HTMLEOF'
 <内容>
 HTMLEOF
 
 # 上传（不加密）
-npx singlepage upload "$tmp" --domain <domain> --api-key <apiKey>
+npx pagest upload "$tmp" --domain <domain> --api-key <apiKey>
 
 # 上传（加密，返回访问码）
-npx singlepage upload "$tmp" --seal --domain <domain> --api-key <apiKey>
+npx pagest upload "$tmp" --seal --domain <domain> --api-key <apiKey>
 
 rm "$tmp"
 ```
 
-如果 `~/.singlepagerc.json` 已配置，可省略 `--domain/--api-key`：
+如果 `~/.pagestrc.json` 已配置，可省略 `--domain/--api-key`：
 
 ```bash
-npx singlepage upload "$tmp"
-npx singlepage upload "$tmp" --seal
+npx pagest upload "$tmp"
+npx pagest upload "$tmp" --seal
 ```
 
 ### 更新已有页面
@@ -53,13 +53,13 @@ npx singlepage upload "$tmp" --seal
 
 ```bash
 echo '<h1>updated</h1>' > /tmp/report_a1b2c3d4.html
-npx singlepage upload /tmp/report_a1b2c3d4.html
+npx pagest upload /tmp/report_a1b2c3d4.html
 ```
 
 ### 删除页面
 
 ```bash
-npx singlepage delete report_a1b2c3d4.html
+npx pagest delete report_a1b2c3d4.html
 ```
 
 ## 输出格式
@@ -71,9 +71,9 @@ npx singlepage delete report_a1b2c3d4.html
 
 ## 首次配置
 
-若 `~/.singlepagerc.json` 不存在或缺少字段，按此流程引导：
+若 `~/.pagestrc.json` 不存在或缺少字段，按此流程引导：
 
-1. 询问用户 singlepage 服务器地址（domain）
+1. 询问用户 pagest 服务器地址（domain）
 2. 询问用户已有账号还是需要注册
 3. 若需注册：
    ```bash
@@ -90,15 +90,15 @@ npx singlepage delete report_a1b2c3d4.html
    ```
 5. 写入配置：
    ```bash
-   cat > ~/.singlepagerc.json << 'EOF'
+   cat > ~/.pagestrc.json << 'EOF'
    {"domain":"<domain>","apiKey":"<从login返回的apiKey>"}
    EOF
-   chmod 600 ~/.singlepagerc.json
+   chmod 600 ~/.pagestrc.json
    ```
 
 ## 注意
 
 - 文件名自动追加随机 ID 确保唯一，除非是更新已有文件
 - `--seal` 在 CLI 端用 AES-256-GCM 加密后上传，访客需输入访问码解密（纯浏览器端解密，需 HTTPS 或 localhost）
-- api-key 从 `~/.singlepagerc.json` 读取，不要硬编码到命令历史
+- api-key 从 `~/.pagestrc.json` 读取，不要硬编码到命令历史
 - 配置文件字段为 `domain`、`apiKey`，与 CLI 的 `--domain`、`--api-key` 对应

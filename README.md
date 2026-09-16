@@ -1,4 +1,4 @@
-# singlepage
+# pagest
 
 Self-hosted HTML sharing with optional access codes — server, CLI, and AI skill in one zero-dep package.
 
@@ -7,26 +7,26 @@ Self-hosted HTML sharing with optional access codes — server, CLI, and AI skil
 ### 1. Start server
 
 ```bash
-npx singlepage serve --port 3000 --dir ./pages
+npx pagest serve --port 3000 --dir ./pages
 ```
 
 Options:
 
 ```bash
-npx singlepage serve --port 8080 --dir /data/pages --token ADMIN_SECRET \
+npx pagest serve --port 8080 --dir /data/pages --token ADMIN_SECRET \
   --public-url https://pages.example.com --trust-proxy
 ```
 
 | Flag | Env | Description |
 |------|-----|-------------|
-| `--port` | `SINGLEPAGE_PORT` | Listen port (default 3000) |
-| `--dir` | `SINGLEPAGE_DIR` | Storage directory (default `./pages`) |
-| `--token` | `SINGLEPAGE_TOKEN` | Admin token (bypasses user auth for uploads) |
-| `--public-url` | `SINGLEPAGE_PUBLIC_URL` | Base URL for generated share links |
-| `--trust-proxy` | `SINGLEPAGE_TRUST_PROXY` | Honor `X-Forwarded-Proto/Host` headers |
+| `--port` | `PAGEST_PORT` | Listen port (default 3000) |
+| `--dir` | `PAGEST_DIR` | Storage directory (default `./pages`) |
+| `--token` | `PAGEST_TOKEN` | Admin token (bypasses user auth for uploads) |
+| `--public-url` | `PAGEST_PUBLIC_URL` | Base URL for generated share links |
+| `--trust-proxy` | `PAGEST_TRUST_PROXY` | Honor `X-Forwarded-Proto/Host` headers |
 | `--tls-cert` / `--tls-key` | — | Direct TLS termination (skip if behind reverse proxy) |
 
-CLI upload/delete also reads: `SINGLEPAGE_DOMAIN`, `SINGLEPAGE_API_KEY`.
+CLI upload/delete also reads: `PAGEST_DOMAIN`, `PAGEST_API_KEY`.
 
 > Access code decryption uses WebCrypto — requires HTTPS or localhost.
 
@@ -57,35 +57,35 @@ Use the API key for all subsequent requests: `Authorization: Bearer <apiKey>`.
 ### 3. Upload from CLI
 
 ```bash
-npx singlepage upload report.html --domain https://pages.example.com --api-key sp_xxx
+npx pagest upload report.html --domain https://pages.example.com --api-key sp_xxx
 
 # With access code (AES-256-GCM client-side encryption)
-npx singlepage upload report.html --domain https://pages.example.com --api-key sp_xxx --seal
+npx pagest upload report.html --domain https://pages.example.com --api-key sp_xxx --seal
 # => {"url":"https://pages.example.com/report.html","code":"XXXX-XXXX-XXXX-XXXX"}
 
 # Supply your own code instead of auto-generated
-npx singlepage upload report.html --seal --code MY-CUSTOM-CODE
+npx pagest upload report.html --seal --code MY-CUSTOM-CODE
 ```
 
 Delete:
 ```bash
-npx singlepage delete report.html --domain https://pages.example.com --api-key sp_xxx
+npx pagest delete report.html --domain https://pages.example.com --api-key sp_xxx
 ```
 
-Shorthand — `singlepage <file.html>` is equivalent to `singlepage upload <file.html>`.
+Shorthand — `pagest <file.html>` is equivalent to `pagest upload <file.html>`.
 
-Configure `~/.singlepagerc.json` to skip `--domain/--api-key`:
+Configure `~/.pagestrc.json` to skip `--domain/--api-key`:
 ```json
 {"domain": "https://pages.example.com", "apiKey": "sp_a1b2c3d4..."}
 ```
 
-Then: `npx singlepage upload report.html --seal`
+Then: `npx pagest upload report.html --seal`
 
 ### 4. AI Skill (Claude Code / Codebuddy)
 
 对 AI 说：
 
-> 帮我安装 singlepage skill：先问我装全局还是当前项目，然后 npm install singlepage，把安装路径下的 SKILL.md 注册到对应的 settings.json 的 skills 数组里，最后读取 SKILL.md 中的「首次配置」章节引导我完成 ~/.singlepagerc.json 的配置。
+> 帮我安装 pagest skill：先问我装全局还是当前项目，然后 npm install pagest，把安装路径下的 SKILL.md 注册到对应的 settings.json 的 skills 数组里，最后读取 SKILL.md 中的「首次配置」章节引导我完成 ~/.pagestrc.json 的配置。
 
 完成后对 AI 说「发布这个页面」「share this html」即可触发 skill。
 
