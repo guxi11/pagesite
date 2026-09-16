@@ -126,7 +126,7 @@ else if (sub === 'upload') upload(false)
 else if (sub === 'delete') del()
 else if (sub && (sub.endsWith('.html') || sub.endsWith('.htm') || existsSync(sub))) upload(true)
 else {
-  console.error(`pagest v1.4.0 — self-hosted HTML sharing
+  console.error(`pagest v1.4.1 — self-hosted HTML sharing
 
 Usage:
   pagest serve  --port 3000 --dir ./pages [--token ADMIN_SECRET] [--tls-cert F --tls-key F]
