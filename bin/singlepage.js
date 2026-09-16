@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// pagesite — self-hosted HTML sharing with optional access codes
-// Modes: serve | upload | delete | mcp
+// singlepage — self-hosted HTML sharing with optional access codes
+// Modes: serve | upload | delete
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-const fail = msg => { console.error(`pagesite: ${msg}`); process.exit(1) }
+const fail = msg => { console.error(`singlepage: ${msg}`); process.exit(1) }
 
 // --- config resolution (flag > env > rc) ---
 const loadRc = () => {
-  const rc = `${homedir()}/.pagesiterc.json`
+  const rc = `${homedir()}/.singlepagerc.json`
   return existsSync(rc) ? JSON.parse(readFileSync(rc, 'utf8')) : {}
 }
 
@@ -19,17 +19,17 @@ const serve = async () => {
   const { values } = parseArgs({
     args: process.argv.slice(3),
     options: {
-      port: { type: 'string', default: process.env.PAGESITE_PORT || '3000' },
-      dir: { type: 'string', default: process.env.PAGESITE_DIR || './pages' },
-      token: { type: 'string', default: process.env.PAGESITE_TOKEN || loadRc().token },
+      port: { type: 'string', default: process.env.SINGLEPAGE_PORT || '3000' },
+      dir: { type: 'string', default: process.env.SINGLEPAGE_DIR || './pages' },
+      token: { type: 'string', default: process.env.SINGLEPAGE_TOKEN || loadRc().token },
       'tls-cert': { type: 'string' },
       'tls-key': { type: 'string' },
-      'public-url': { type: 'string', default: process.env.PAGESITE_PUBLIC_URL },
-      'trust-proxy': { type: 'boolean', default: process.env.PAGESITE_TRUST_PROXY === 'true' }
+      'public-url': { type: 'string', default: process.env.SINGLEPAGE_PUBLIC_URL },
+      'trust-proxy': { type: 'boolean', default: process.env.SINGLEPAGE_TRUST_PROXY === 'true' }
     },
     strict: false
   })
-  if (!values.token) console.error('pagesite: no --token set; only registered user tokens will work for uploads')
+  if (!values.token) console.error('singlepage: no --token set; only users with api-keys will be authorized')
   const { createServer } = await import('../lib/server.js')
   createServer({
     dir: resolve(values.dir),
@@ -42,15 +42,27 @@ const serve = async () => {
   })
 }
 
+const resolveAuth = (values) => {
+  const rc = loadRc()
+  const domain = values.domain ?? process.env.SINGLEPAGE_DOMAIN ?? rc.domain
+  if (!domain) fail('--domain required')
+  const adminToken = values.token ?? process.env.SINGLEPAGE_TOKEN
+  const apiKey = values['api-key'] ?? process.env.SINGLEPAGE_API_KEY ?? rc.apiKey
+  const headers = {}
+  if (adminToken) headers.authorization = `Bearer ${adminToken}`
+  else if (apiKey) headers.authorization = `Bearer ${apiKey}`
+  else fail('--api-key or --token required (or set apiKey in ~/.singlepagerc.json)')
+  return { domain, headers }
+}
+
 // --- subcommand: upload ---
 const upload = async (fileArg) => {
   const { values, positionals } = parseArgs({
-    args: process.argv.slice(fileArg ?2 : 3),
+    args: process.argv.slice(fileArg ? 2 : 3),
     options: {
       domain: { type: 'string' },
       token: { type: 'string' },
-      user: { type: 'string' },
-      pass: { type: 'string' },
+      'api-key': { type: 'string' },
       seal: { type: 'boolean', default: false },
       code: { type: 'string' }
     },
@@ -60,13 +72,7 @@ const upload = async (fileArg) => {
   const file = positionals[0]
   if (!file || !existsSync(file)) fail(`file not found: ${file}`)
 
-  const rc = loadRc()
-  const domain = values.domain ?? process.env.PAGESITE_DOMAIN ?? rc.domain
-  if (!domain) fail('--domain required')
-
-  const token = values.token ?? process.env.PAGESITE_TOKEN ?? rc.token
-  const user = values.user ?? process.env.PAGESITE_USER ?? rc.user
-  const pass = values.pass ?? process.env.PAGESITE_PASS ?? rc.pass
+  const { domain, headers } = resolveAuth(values)
 
   const html = readFileSync(file, 'utf8')
   let body = html, code = null
@@ -79,9 +85,6 @@ const upload = async (fileArg) => {
 
   const name = basename(file)
   const url = `${domain.replace(/\/+$/, '')}/${name}`
-  const headers = {}
-  if (token) headers.authorization = `Bearer ${token}`
-  else if (user) headers.authorization = `Basic ${Buffer.from(`${user}:${pass ?? ''}`).toString('base64')}`
 
   const res = await fetch(url, { method: 'PUT', headers, body })
   if (!res.ok) fail(`upload ${res.status}: ${await res.text()}`)
@@ -97,8 +100,7 @@ const del = async () => {
     options: {
       domain: { type: 'string' },
       token: { type: 'string' },
-      user: { type: 'string' },
-      pass: { type: 'string' }
+      'api-key': { type: 'string' }
     },
     allowPositionals: true,
     strict: false
@@ -106,18 +108,8 @@ const del = async () => {
   const name = positionals[0]
   if (!name) fail('filename required (e.g. page.html)')
 
-  const rc = loadRc()
-  const domain = values.domain ?? process.env.PAGESITE_DOMAIN ?? rc.domain
-  if (!domain) fail('--domain required')
-
-  const token = values.token ?? process.env.PAGESITE_TOKEN ?? rc.token
-  const user = values.user ?? process.env.PAGESITE_USER ?? rc.user
-  const pass = values.pass ?? process.env.PAGESITE_PASS ?? rc.pass
-
+  const { domain, headers } = resolveAuth(values)
   const url = `${domain.replace(/\/+$/, '')}/${name}`
-  const headers = {}
-  if (token) headers.authorization = `Bearer ${token}`
-  else if (user) headers.authorization = `Basic ${Buffer.from(`${user}:${pass ?? ''}`).toString('base64')}`
 
   const res = await fetch(url, { method: 'DELETE', headers })
   if (!res.ok) fail(`delete ${res.status}: ${await res.text()}`)
@@ -134,22 +126,23 @@ else if (sub === 'upload') upload(false)
 else if (sub === 'delete') del()
 else if (sub && (sub.endsWith('.html') || sub.endsWith('.htm') || existsSync(sub))) upload(true)
 else {
-  console.error(`pagesite v1.2.5 — self-hosted HTML sharing
+  console.error(`singlepage v1.4.0 — self-hosted HTML sharing
 
 Usage:
-  pagesite serve  --port 3000 --dir ./pages [--token ADMIN_SECRET] [--tls-cert F --tls-key F]
+  singlepage serve  --port 3000 --dir ./pages [--token ADMIN_SECRET] [--tls-cert F --tls-key F]
                   [--public-url URL] [--trust-proxy]
-  pagesite upload <file.html> --domain URL [--token T | --user U --pass P] [--seal] [--code CODE]
-  pagesite delete <name.html> --domain URL [--token T | --user U --pass P]
-  pagesite <file.html> --domain URL ...(shorthand for upload)
+  singlepage upload <file.html> --domain URL [--token T | --api-key K] [--seal] [--code CODE]
+  singlepage delete <name.html> --domain URL [--token T | --api-key K]
+  singlepage <file.html> --domain URL ...(shorthand for upload)
 
 Auth:
-  Users register via web UI or POST /api/register with {id, token}.
-  --token in serve mode sets an admin token (optional, alongside user tokens).
+  Register via web UI or POST /api/register with {id, password}.
+  Login via POST /api/login to get an api-key (sp_...) for CLI/API use.
+  --token in serve mode sets an admin token (optional, alongside user api-keys).
 
 Environment:
-  PAGESITE_PORT, PAGESITE_DIR, PAGESITE_TOKEN, PAGESITE_DOMAIN
-  PAGESITE_PUBLIC_URL  — base URL for generated share links (serve mode)
-  PAGESITE_TRUST_PROXY — honor X-Forwarded-Proto/Host headers (serve mode)`)
+  SINGLEPAGE_PORT, SINGLEPAGE_DIR, SINGLEPAGE_TOKEN, SINGLEPAGE_DOMAIN, SINGLEPAGE_API_KEY
+  SINGLEPAGE_PUBLIC_URL  — base URL for generated share links (serve mode)
+  SINGLEPAGE_TRUST_PROXY — honor X-Forwarded-Proto/Host headers (serve mode)`)
   process.exit(1)
 }

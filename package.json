@@ -1,10 +1,10 @@
 {
-  "name": "pagesite",
-  "version": "1.3.0",
+  "name": "singlepage",
+  "version": "1.4.0",
   "description": "Self-hosted HTML sharing with optional access codes — server, CLI, and AI skill in one zero-dep package",
   "type": "module",
   "bin": {
-    "pagesite": "./bin/pagesite.js"
+    "singlepage": "./bin/singlepage.js"
   },
   "files": [
     "bin",
