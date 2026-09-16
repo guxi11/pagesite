@@ -1,6 +1,6 @@
 {
   "name": "pagest",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Self-hosted HTML sharing with optional access codes — server, CLI, and AI skill in one zero-dep package",
   "type": "module",
   "bin": {
