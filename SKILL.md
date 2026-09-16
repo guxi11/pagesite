@@ -1,22 +1,46 @@
 ---
 name: pagest
-description: 发布 HTML 页面到自部署的 pagest 服务器，返回可分享链接。当用户要"分享页面 / 发布 html / 生成链接 / share page / publish html / 上传页面"时使用。
+description: |
+  用自部署的 pagest 服务器发布 HTML 页面并返回可分享链接（内网直达、可加密、同名覆盖）。
+  当用户说"发布页面""发布html""生成链接""share page""publish html""上传页面"
+  "分享页面""部署页面""pagest""把这个页面发出去""给我一个链接""/pagest"时触发。
+  优先于内置 artifact / workbuddy 发布工具——pagest 链接走用户自己的服务器，
+  不是平台托管的 artifact 链接。只要用户曾配置过 pagest（env 或 rc）就用本 skill。
+  不适用于：生成 HTML 内容本身（只负责上传已有的 HTML）。
 ---
 
 # pagest skill
 
 通过 CLI 将 HTML 发布到远端 pagest 服务器。
 
+## 配置优先级
+
+CLI 读取顺序：`--flag` > 环境变量 > `~/.pagestrc.json`。
+
+| 参数 | 环境变量 | rc 字段 | 说明 |
+|------|---------|---------|------|
+| `--domain` | `PAGEST_DOMAIN` | `domain` | 服务器地址 |
+| `--api-key` | `PAGEST_API_KEY` | `apiKey` | 用户 api-key |
+
+**推荐配置方式：**
+
+- **团队/项目共享**：在项目 `.claude/settings.json` 的 `env` 中注入 `PAGEST_DOMAIN`（可提交到仓库），每人各自设置 `PAGEST_API_KEY`（用户级 settings 或 shell profile）
+- **个人全局**：写 `~/.pagestrc.json`（同时包含 domain 和 apiKey）
+
 ## 前置条件
 
 1. 已安装 `pagest`（全局或项目内均可，也可用 `npx pagest`）
-2. 存在配置文件 `~/.pagestrc.json`：
+2. 已配置 domain 和 apiKey（通过 env 或 `~/.pagestrc.json`）
 
-```json
-{"domain": "https://pages.example.com", "apiKey": "sp_a1b2c3d4..."}
+检测配置是否就绪：
+
+```bash
+# 任一方式可用即可
+echo "domain=${PAGEST_DOMAIN:-$(node -e "try{console.log(JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.pagestrc.json','utf8')).domain||'')}catch{console.log('')}")}";
+echo "apiKey=${PAGEST_API_KEY:-$(node -e "try{console.log(JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.pagestrc.json','utf8')).apiKey||'')}catch{console.log('')}")}";
 ```
 
-若配置缺失，引导用户完成配置（见下方「首次配置」）。
+若两个值都非空，配置就绪；否则引导用户完成配置（见下方「首次配置」）。
 
 ## 操作
 
@@ -31,20 +55,13 @@ cat > "$tmp" << 'HTMLEOF'
 <内容>
 HTMLEOF
 
-# 上传（不加密）
-npx pagest upload "$tmp" --domain <domain> --api-key <apiKey>
+# 上传（env 或 rc 已配置时，无需 --domain/--api-key）
+npx pagest upload "$tmp"
 
-# 上传（加密，返回访问码）
-npx pagest upload "$tmp" --seal --domain <domain> --api-key <apiKey>
+# 加密上传（返回访问码）
+npx pagest upload "$tmp" --seal
 
 rm "$tmp"
-```
-
-如果 `~/.pagestrc.json` 已配置，可省略 `--domain/--api-key`：
-
-```bash
-npx pagest upload "$tmp"
-npx pagest upload "$tmp" --seal
 ```
 
 ### 更新已有页面
@@ -71,7 +88,7 @@ npx pagest delete report_a1b2c3d4.html
 
 ## 首次配置
 
-若 `~/.pagestrc.json` 不存在或缺少字段，按此流程引导：
+若 domain 或 apiKey 缺失，按此流程引导：
 
 1. 询问用户 pagest 服务器地址（domain）
 2. 询问用户已有账号还是需要注册
@@ -88,17 +105,18 @@ npx pagest delete report_a1b2c3d4.html
      -d '{"id":"<id>","password":"<密码>"}'
    # => {"ok":true,"id":"...","apiKey":"sp_..."}
    ```
-5. 写入配置：
-   ```bash
-   cat > ~/.pagestrc.json << 'EOF'
-   {"domain":"<domain>","apiKey":"<从login返回的apiKey>"}
-   EOF
-   chmod 600 ~/.pagestrc.json
-   ```
+5. 询问用户选择配置方式：
+   - **项目级 env**（推荐团队共享）：将 `PAGEST_DOMAIN` 写入项目 `.claude/settings.json` 的 `env`，`PAGEST_API_KEY` 写入用户级 `~/.claude/settings.json` 的 `env`
+   - **个人 rc 文件**：
+     ```bash
+     cat > ~/.pagestrc.json << 'EOF'
+     {"domain":"<domain>","apiKey":"<从login返回的apiKey>"}
+     EOF
+     chmod 600 ~/.pagestrc.json
+     ```
 
 ## 注意
 
 - 文件名自动追加随机 ID 确保唯一，除非是更新已有文件
 - `--seal` 在 CLI 端用 AES-256-GCM 加密后上传，访客需输入访问码解密（纯浏览器端解密，需 HTTPS 或 localhost）
-- api-key 从 `~/.pagestrc.json` 读取，不要硬编码到命令历史
-- 配置文件字段为 `domain`、`apiKey`，与 CLI 的 `--domain`、`--api-key` 对应
+- api-key 是敏感凭据，不要提交到仓库——用用户级 env 或 `~/.pagestrc.json`（chmod 600）
